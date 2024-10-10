@@ -9,8 +9,11 @@ from googleapiclient.errors import HttpError
 import json
 from googleapiclient.http import MediaIoBaseDownload
 import io
+import random
+import trueskill as ts
 
 from classes import *
+
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ["https://www.googleapis.com/auth/drive"]
@@ -106,11 +109,51 @@ def add_player(name):
     save_database(db)
     return success
 
+def play_match_singles():
+    db = load_database()
+    p1, p2 = random.sample(db.players, 2)
+    vs_dict = {p1.name: p1, p2.name: p2}
+    print(p1.name, ' vs ', p2.name)
+    print('Who won?')
+    winner_name = ''
+    while winner_name != p1.name and winner_name != p2.name:
+        print('Input player tag:')
+        winner_name = input()
+    winner = vs_dict.pop(winner_name)
+    loser = list(vs_dict.values())[0]
+    w_rating = ts.Rating(mu=winner.mu_singles,
+                      sigma=winner.sigma_singles)
+    l_rating = ts.Rating(mu=loser.mu_singles,
+                      sigma=loser.sigma_singles)
+    w_rating, l_rating = ts.rate_1vs1(w_rating, l_rating,
+            env=ts.TrueSkill(draw_probability=0.0))
+
+    winner.mu_singles = w_rating.mu
+    winner.sigma_singles = w_rating.sigma
+    loser.mu_singles = l_rating.mu
+    loser.sigma_singles = l_rating.sigma
+    save_database(db)
+
 def main():
     creds = get_creds() 
     download_database(creds)
-    add_player('nokom')
+    play_another = True
+    while play_another:
+        print()
+        play_match_singles()
+        print()
+        ans = ''
+        print('Play another?')
+        while ans != 'yes' and ans != 'no':
+            print('Input yes or no:')
+            ans = input()
+        if ans == 'yes':
+            pass
+        if ans == 'no':
+            play_another = False
+        print()
     upload_database(creds)
+
 
 if __name__ == "__main__":
     main()

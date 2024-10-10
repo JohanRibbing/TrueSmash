@@ -6,27 +6,6 @@
             "sigma_singles": 8.333333333333334,
             "mu_doubles": 25,
             "sigma_doubles": 8.333333333333334
-        },
-        {
-            "name": "DK",
-            "mu_singles": 25,
-            "sigma_singles": 8.333333333333334,
-            "mu_doubles": 25,
-            "sigma_doubles": 8.333333333333334
-        },
-        {
-            "name": "hotdognalds",
-            "mu_singles": 25,
-            "sigma_singles": 8.333333333333334,
-            "mu_doubles": 25,
-            "sigma_doubles": 8.333333333333334
-        },
-        {
-            "name": "nokom",
-            "mu_singles": 25,
-            "sigma_singles": 8.333333333333334,
-            "mu_doubles": 25,
-            "sigma_doubles": 8.333333333333334
         }
     ]
 }

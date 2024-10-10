@@ -1,3 +1,6 @@
+import trueskill as ts
+
+
 class Player:
     def __init__(self, dct):
         self.name = dct['name']
