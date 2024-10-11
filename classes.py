@@ -10,9 +10,19 @@ class Player:
         self.mu_doubles = dct['mu_doubles']
         self.sigma_doubles = dct['sigma_doubles']
     
-    def get_rating(self):
+    def get_singles_rating(self):
         return ts.Rating(mu=self.mu_singles,
                       sigma=self.sigma_singles)
+
+    def get_doubles_rating(self):
+        return ts.Rating(mu=self.mu_doubles,
+                      sigma=self.sigma_doubles)
+
+    def get_singles_trueskill(self):
+        return self.mu_singles - 3*self.sigma_singles
+
+    def get_doubles_trueskill(self):
+        return self.mu_doubles - 3*self.sigma_doubles
 
 class Database:
     def __init__(self, players_json):
@@ -61,8 +71,8 @@ class Database:
             winner_name = input()
         winner = vs_dict.pop(winner_name)
         loser = list(vs_dict.values())[0]
-        w_rating = winner.get_rating()
-        l_rating = loser.get_rating()
+        w_rating = winner.get_singles_rating()
+        l_rating = loser.get_singles_rating()
         w_rating, l_rating = ts.rate_1vs1(w_rating, l_rating,
                 env=ts.TrueSkill(draw_probability=0.0))
 
@@ -80,7 +90,7 @@ class Database:
 
         # t1p1, t1p2, t2p1, t2p2
         lineup = random.sample(self.players, 4)
-        ratings = [p.get_rating() for p in lineup]
+        ratings = [p.get_doubles_rating() for p in lineup]
         print(f'(Blue team: {lineup[0].name} and {lineup[1].name})',
                 ' vs ',
               f'(Red team: {lineup[2].name} and {lineup[3].name})')
@@ -97,8 +107,8 @@ class Database:
         rated_rating_groups = ts.TrueSkill(draw_probability=0.0).rate(
                 rating_groups,
                 ranks=[
-                       int('blue'==winner_team),
-                       int('red'==winner_team)
+                       int('blue'!=winner_team),
+                       int('red'!=winner_team)
                       ]
                                                                   )
         new_ratings = []
@@ -113,21 +123,26 @@ class Database:
         print('Ratings updated')
         return True
 
-
     def get_ladder_singles(self):
         sorted_players = sorted(self.players,
-                key=lambda x: x.mu_singles, reverse=True)
+                key=lambda x: x.get_singles_trueskill(),
+                reverse=True)
         return (
-                [p.name for p in sorted_players],
-                [round(p.mu_singles, 3) for p in sorted_players]
+                [p.name
+                        for p in sorted_players],
+                [round(p.get_singles_trueskill(), 3)
+                       for p in sorted_players]
                )
 
     def get_ladder_doubles(self):
         sorted_players = sorted(self.players,
-                key=lambda x: x.mu_doubles, reverse=True)
+                key=lambda x: x.get_doubles_trueskill(),
+                reverse=True)
         return (
-                [p.name for p in sorted_players],
-                [round(p.mu_doubles, 3) for p in sorted_players]
+                [p.name
+                        for p in sorted_players],
+                [round(p.get_doubles_trueskill(), 3)
+                        for p in sorted_players]
                )
 
 

@@ -55,7 +55,8 @@ def load_database():
     with open(local_database_file_name, 'r') as file:
         return Database(json.loads(file.read()))
 
-def download_database(creds):
+def download_database():
+    creds = get_creds()
     print('Downloading will overwrite any local data, do you want to continue?')
     if yes_or_no():
         pass
@@ -79,7 +80,8 @@ def download_database(creds):
         print(f"An error occurred: {error}")
         return False
 
-def upload_database(creds):
+def upload_database():
+    creds = get_creds()
     print('Uploading will overwrite any cloud data, do you want to continue?')
     if yes_or_no():
         pass
@@ -134,12 +136,10 @@ def play_singles():
     play_another = True
     while play_another:
         play_match_singles()
-        ans = ''
         print('Play another?')
-        ans = yes_or_no()
-        if ans == 'yes':
+        if yes_or_no():
             pass
-        if ans == 'no':
+        else:
             play_another = False
 
 def play_match_doubles():
@@ -171,12 +171,34 @@ def print_ladder():
                      names_doubles[i], ratings_doubles[i]])
     print(tab)
 
+menu_dict = dict(download_database=download_database,
+                 print_ladder=print_ladder,
+                 add_player=add_player, 
+                 play_singles=play_singles,
+                 play_doubles=play_doubles,
+                 upload_database=upload_database,
+                 stop_playing=lambda: None)
 
 def main():
-    creds = get_creds() 
-    download_database(creds)
-    reset_ratings()
-    upload_database(creds)
+    keys = menu_dict.keys()
+    stop = False
+    option = ''
+    while not stop:
+        option = ''
+        print()
+        print('-'*10)
+        print('Menu')
+        print('-'*10)
+        for k in keys:
+            print(k)
+        print('-'*10)
+        while option not in keys:
+            print('Input menu option')
+            option = input()
+        menu_dict[option].__call__()
+        if option == 'stop_playing':
+            stop = True
+
 
 
 if __name__ == "__main__":
