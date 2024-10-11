@@ -9,8 +9,7 @@ from googleapiclient.errors import HttpError
 import json
 from googleapiclient.http import MediaIoBaseDownload
 import io
-import random
-import trueskill as ts
+from prettytable import PrettyTable
 
 from classes import *
 
@@ -21,6 +20,12 @@ cloud_database_file_id = '149PKjQ7O1ynLFQ4MJA67jhTNv-Cg8fnk'
 local_database_file_name = 'database.json'
 
     
+def yes_or_no():
+    ans = ''
+    while ans != 'yes' and ans != 'no':
+        print('Input yes or no:')
+        ans = input()
+    return ans == 'yes'
     
 def get_creds():
     creds = None
@@ -41,21 +46,20 @@ def get_creds():
 
 def save_database(db):
     with open(local_database_file_name, 'w') as file:
-        file.write(json.dumps(db, default=(lambda x: x.__dict__), indent=4))
+        file.write(json.dumps(db,
+                              default=(lambda x: x.__dict__),
+                              indent=4))
+    return True
 
 def load_database():
     with open(local_database_file_name, 'r') as file:
         return Database(json.loads(file.read()))
 
 def download_database(creds):
-    ans = ''
     print('Downloading will overwrite any local data, do you want to continue?')
-    while ans != 'yes' and ans != 'no':
-        print('Input yes or no:')
-        ans = input()
-    if ans == 'yes':
+    if yes_or_no():
         pass
-    if ans == 'no':
+    else:
         return False
     try:
         service = build("drive", "v3", credentials=creds)
@@ -76,14 +80,10 @@ def download_database(creds):
         return False
 
 def upload_database(creds):
-    ans = ''
     print('Uploading will overwrite any cloud data, do you want to continue?')
-    while ans != 'yes' and ans != 'no':
-        print('Input yes or no:')
-        ans = input()
-    if ans == 'yes':
+    if yes_or_no():
         pass
-    if ans == 'no':
+    else:
         return False
     try:
         service = build("drive", "v3", credentials=creds)
@@ -100,58 +100,82 @@ def upload_database(creds):
 
 def delete_player(name):
     db = load_database()
-    db.delete_player(name)
+    success = db.delete_player(name)
     save_database(db)
+    return success
 
-def add_player(name):
+def add_player():
     db = load_database()
+    name = ''
+    sure = False
+    while not sure:
+        print('Player tag to add:')
+        name = input()
+        print(f'You input {name}, are you sure you want to add {name}?')
+        sure = yes_or_no()
+
     success = db.add_player(name)
+    save_database(db)
+    return success
+
+def reset_ratings():
+    db = load_database()
+    success = db.reset_ratings()
     save_database(db)
     return success
 
 def play_match_singles():
     db = load_database()
-    p1, p2 = random.sample(db.players, 2)
-    vs_dict = {p1.name: p1, p2.name: p2}
-    print(p1.name, ' vs ', p2.name)
-    print('Who won?')
-    winner_name = ''
-    while winner_name != p1.name and winner_name != p2.name:
-        print('Input player tag:')
-        winner_name = input()
-    winner = vs_dict.pop(winner_name)
-    loser = list(vs_dict.values())[0]
-    w_rating = ts.Rating(mu=winner.mu_singles,
-                      sigma=winner.sigma_singles)
-    l_rating = ts.Rating(mu=loser.mu_singles,
-                      sigma=loser.sigma_singles)
-    w_rating, l_rating = ts.rate_1vs1(w_rating, l_rating,
-            env=ts.TrueSkill(draw_probability=0.0))
-
-    winner.mu_singles = w_rating.mu
-    winner.sigma_singles = w_rating.sigma
-    loser.mu_singles = l_rating.mu
-    loser.sigma_singles = l_rating.sigma
+    success = db.play_match_singles()
     save_database(db)
+    return success
 
-def main():
-    creds = get_creds() 
-    download_database(creds)
+def play_singles():
     play_another = True
     while play_another:
-        print()
         play_match_singles()
-        print()
         ans = ''
         print('Play another?')
-        while ans != 'yes' and ans != 'no':
-            print('Input yes or no:')
-            ans = input()
+        ans = yes_or_no()
         if ans == 'yes':
             pass
         if ans == 'no':
             play_another = False
-        print()
+
+def play_match_doubles():
+    db = load_database()
+    success = db.play_match_doubles()
+    save_database(db)
+    return success
+
+def play_doubles():
+    play_another = True
+    while play_another:
+        play_match_doubles()
+        ans = ''
+        print('Play another?')
+        if yes_or_no():
+            pass
+        else:
+            play_another = False
+
+def print_ladder():
+    print('\n'*50)
+    db = load_database()
+    names_singles, ratings_singles = db.get_ladder_singles()
+    names_doubles, ratings_doubles = db.get_ladder_doubles()
+    tab = PrettyTable(['Singles', '+-+-+-', 'Doubles', '-+-+-+'])
+    tab.add_row(['tag', 'rating', 'tag', 'rating'], divider=True)
+    for i in range(len(names_singles)):
+        tab.add_row([names_singles[i], ratings_singles[i],
+                     names_doubles[i], ratings_doubles[i]])
+    print(tab)
+
+
+def main():
+    creds = get_creds() 
+    download_database(creds)
+    reset_ratings()
     upload_database(creds)
 
 
