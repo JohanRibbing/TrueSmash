@@ -10,6 +10,7 @@ import json
 from googleapiclient.http import MediaIoBaseDownload
 import io
 from prettytable import PrettyTable
+import PySimpleGUI as sg
 
 from classes import *
 
@@ -180,6 +181,7 @@ menu_dict = dict(download_database=download_database,
                  stop_playing=lambda: None)
 
 def main():
+    sg.popup('Welcome to TrueSmash!')
     keys = menu_dict.keys()
     stop = False
     option = ''
